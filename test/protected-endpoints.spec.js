@@ -3,7 +3,7 @@ const app = require('../src/app');
 const helpers = require('./test-helpers');
 const supertest = require('supertest');
 
-describe('Protected endpoints', function() {
+describe('Protected endpoints', function () {
   let db;
 
   const {
@@ -24,10 +24,10 @@ describe('Protected endpoints', function() {
 
   before('cleanup', () => helpers.cleanTables(db));
 
-  afterEach('cleanup', () => helpers.cleanTables(db));    
+  afterEach('cleanup', () => helpers.cleanTables(db));
 
   describe('GET /api/articles/:article_id', () => {
-    beforeEach('insert artciles', () => 
+    beforeEach('insert artciles', () =>
       helpers.seedArticlesTables(
         db,
         testUsers,
@@ -36,18 +36,18 @@ describe('Protected endpoints', function() {
       )
     );
 
-    it('responds with 401 \'Missing basic token\' when no basic token', () => {
+    it('responds with 401 \'Missing bearer token\' when no bearer token', () => {
       return supertest(app)
         .get('/api/articles/123')
-        .expect(401, {error: 'Missing basic token'});
+        .expect(401, { error: 'Missing bearer token' });
     });
 
     it('responds 401 \'Unauthorized request\' when no credentials in token', () => {
-      const userNoCreds = { user_name: '', password: ''};
+      const userNoCreds = { user_name: '', password: '' };
       return supertest(app)
         .get('/api/articles/123')
         .set('Authorization', helpers.makeAuthHeader(userNoCreds))
-        .expect(401, {error: 'Unauthorized request'});
+        .expect(401, { error: 'Unauthorized request' });
     });
 
     it('responds 401 \'Unauthorized request\' when invalid user', () => {

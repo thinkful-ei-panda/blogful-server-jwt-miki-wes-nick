@@ -4,7 +4,7 @@ const app = require('../src/app');
 const helpers = require('./test-helpers');
 const supertest = require('supertest');
 
-describe.only('Auth Endpoints', function() {
+describe('Auth Endpoints', function () {
   let db;
 
   const { testUsers } = helpers.makeArticlesFixtures();
@@ -25,76 +25,75 @@ describe.only('Auth Endpoints', function() {
   afterEach('cleanup', () => helpers.cleanTables(db));
 
   describe('POST /api/auth/login', () => {
-    beforeEach('insert users', () => 
+    beforeEach('insert users', () =>
       helpers.seedUsers(
         db,
         testUsers,
       )
-    )
+    );
 
-    
-    const requiredFields =  ['user_name','password']
+
+    const requiredFields = ['user_name', 'password'];
 
     requiredFields.forEach(field => {
       const loginAttemptBody = {
         user_name: testUser.user_name,
         password: testUser.password,
-      }
+      };
 
       it(`responds with 400 required error when \'${field}\' is missing`, () => {
-        delete loginAttemptBody[field]
+        delete loginAttemptBody[field];
 
         return supertest(app)
-        .post('/api/auth/login')
-        .send(loginAttemptBody)
-        .expect(400, {
-          error: `Missing '${field} in request body`
-        })
-      })      
-    })
+          .post('/api/auth/login')
+          .send(loginAttemptBody)
+          .expect(400, {
+            error: `Missing '${field} in request body`
+          });
+      });
+    });
 
-    it(`responds with a 401 required error when invalid user name`, () => {
+    it('responds with a 401 required error when invalid user name', () => {
       const userInvalidUser = {
         user_name: 'InvalidUserName',
         password: 'SomePassword'
-      }
+      };
       return supertest(app)
-      .post('/api/auth/login')
-      .send(userInvalidUser)
-      .expect(401, {
-        error: `Incorrect username or password`
-      })
-    })
+        .post('/api/auth/login')
+        .send(userInvalidUser)
+        .expect(401, {
+          error: 'Incorrect username or password'
+        });
+    });
 
-    it(`responds with a 401 required error when invalid password`, () => {
+    it('responds with a 401 required error when invalid password', () => {
       const userInvalidPassword = {
         user_name: testUser.user_name,
         password: 'SomePassword'
-      }
+      };
       return supertest(app)
-      .post('/api/auth/login')
-      .send(userInvalidPassword)
-      .expect(401, {
-        error: 'Incorrect username or password'
-      })
-    })
+        .post('/api/auth/login')
+        .send(userInvalidPassword)
+        .expect(401, {
+          error: 'Incorrect username or password'
+        });
+    });
 
-    it(`responds with a 200 and bearer token`, () => {
+    it('responds with a 200 and bearer token', () => {
       const expectedToken = jwt.sign(
         { user_id: testUser.id },
         process.env.JWT_SECRET,
         {
           subject: testUser.user_name,
         }
-      )
-      console.log(testUser)
+      );
       return supertest(app)
         .post('/api/auth/login')
         .send(testUser)
         .expect(200, {
           authToken: expectedToken,
-        })
-    })
+        });
+    });
 
   });
 });
