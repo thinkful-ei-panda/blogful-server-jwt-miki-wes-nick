@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs')
 
 function makeUsersArray() {
   return [
@@ -224,6 +225,20 @@ function cleanTables(db) {
   )
 }
 
+function seedUsers(db,users) {
+  const preppedUsers = users.map(user => ({
+    ...user,
+    password: bcrypt.hashSync(user.password,1),
+  }))
+
+  return db('blogful_users').insert(users)
+  .then(() => {
+    db.raw('SELECT setval(\'blogful_users_id_seq\',?)',
+    [users[users.length-1].id],
+    )
+  })
+}
+
 function seedArticlesTables(db, users, articles, comments=[]) {
   // use a transaction to group the queries and auto rollback on any failure
   return db.transaction(async trx => {
@@ -279,6 +294,7 @@ module.exports = {
 
   makeArticlesFixtures,
   cleanTables,
+  seedUsers,
   seedArticlesTables,
   seedMaliciousArticle,
   makeAuthHeader
