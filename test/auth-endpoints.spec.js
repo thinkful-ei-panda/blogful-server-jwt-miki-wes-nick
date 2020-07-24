@@ -1,4 +1,5 @@
 const knex = require('knex');
+const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const helpers = require('./test-helpers');
 const supertest = require('supertest');
@@ -52,7 +53,7 @@ describe.only('Auth Endpoints', function() {
       })      
     })
 
-    it(`responds with a 400 required error when invalid user name`, () => {
+    it(`responds with a 401 required error when invalid user name`, () => {
       const userInvalidUser = {
         user_name: 'InvalidUserName',
         password: 'SomePassword'
@@ -60,9 +61,40 @@ describe.only('Auth Endpoints', function() {
       return supertest(app)
       .post('/api/auth/login')
       .send(userInvalidUser)
-      .expect(400, {
+      .expect(401, {
         error: `Incorrect username or password`
       })
     })
+
+    it(`responds with a 401 required error when invalid password`, () => {
+      const userInvalidPassword = {
+        user_name: testUser.user_name,
+        password: 'SomePassword'
+      }
+      return supertest(app)
+      .post('/api/auth/login')
+      .send(userInvalidPassword)
+      .expect(401, {
+        error: 'Incorrect username or password'
+      })
+    })
+
+    it(`responds with a 200 and bearer token`, () => {
+      const expectedToken = jwt.sign(
+        { user_id: testUser.id },
+        process.env.JWT_SECRET,
+        {
+          subject: testUser.user_name,
+        }
+      )
+      console.log(testUser)
+      return supertest(app)
+        .post('/api/auth/login')
+        .send(testUser)
+        .expect(200, {
+          authToken: expectedToken,
+        })
+    })
+
   });
 });

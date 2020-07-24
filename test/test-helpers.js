@@ -228,10 +228,10 @@ function cleanTables(db) {
 function seedUsers(db,users) {
   const preppedUsers = users.map(user => ({
     ...user,
-    password: bcrypt.hashSync(user.password,1),
+    password: bcrypt.hashSync(user.password, 1),
   }))
 
-  return db('blogful_users').insert(users)
+  return db('blogful_users').insert(preppedUsers)
   .then(() => {
     db.raw('SELECT setval(\'blogful_users_id_seq\',?)',
     [users[users.length-1].id],
@@ -242,19 +242,15 @@ function seedUsers(db,users) {
 function seedArticlesTables(db, users, articles, comments=[]) {
   // use a transaction to group the queries and auto rollback on any failure
   return db.transaction(async trx => {
-    await trx.into('blogful_users').insert(users)
+    // await trx.into('blogful_users').insert()
+    await seedUsers(trx, users)
     await trx.into('blogful_articles').insert(articles)
     // update the auto sequence to match the forced id values
-    await Promise.all([
-      trx.raw(
-        `SELECT setval('blogful_users_id_seq', ?)`,
-        [users[users.length - 1].id],
-      ),
+    await 
       trx.raw(
         `SELECT setval('blogful_articles_id_seq', ?)`,
         [articles[articles.length - 1].id],
-      ),
-    ])
+      )
     // only insert comments if there are some, also update the sequence counter
     if (comments.length) {
       await trx.into('blogful_comments').insert(comments)
@@ -267,9 +263,7 @@ function seedArticlesTables(db, users, articles, comments=[]) {
 }
 
 function seedMaliciousArticle(db, user, article) {
-  return db
-    .into('blogful_users')
-    .insert([user])
+  return seedUsers(db, [user])
     .then(() =>
       db
         .into('blogful_articles')
