@@ -1,12 +1,15 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const AuthService = require('./auth-service');
+
+// const AuthService = require('./auth-service')
 
 const AuthRouter = express.Router();
 
 AuthRouter
   .route('/login')
-  .post(express.json(), async (req, res, next) => {
+  .post(express.json(), (req, res, next) => {
     const { user_name, password } = req.body;
     const loginUser = { user_name, password };
 
@@ -17,31 +20,31 @@ AuthRouter
         });
     }
 
-    const user = await req.app.get('db')('blogful_users')
-      .select('*')
-      .where({ user_name })
-      .first()
+    return AuthService.getUserWithUserName(req.app.get('db'),loginUser.user_name)
+      .then(user => {
+        if (!user){
+          return res.status(401).json({ error: 'Incorrect username or password' });
+        }
+        
+        return bcrypt.compare(password, user.password)
+          .then(passwordMatch => {
+            if (!passwordMatch){
+              return res.status(401).json({ error: 'Incorrect username or password' });
+            }
+
+            const token = jwt.sign(
+              { user_id: user.id },
+              process.env.JWT_SECRET,
+              {
+                subject: user.user_name
+              }
+            );
+
+            res.json({ authToken: token });
+          })
+          .catch(next);
+      })
       .catch(next);
-    if (!user)
-      return res.status(401).json({ error: 'Incorrect username or password' });
-
-    const passwordMatch = await bcrypt.compare(password, user.password).catch(next);
-
-    if (!passwordMatch)
-      return res.status(401).json({ error: 'Incorrect username or password' });
-
-    const token = jwt.sign(
-      { user_id: user.id },
-      process.env.JWT_SECRET,
-      {
-        subject: user.user_name
-      }
-    );
-
-    res.json({ authToken: token });
-    next();
-
-
   });
 
 module.exports = AuthRouter;

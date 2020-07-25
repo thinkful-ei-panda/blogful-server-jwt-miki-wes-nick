@@ -44,14 +44,16 @@ describe('Protected endpoints', function () {
 
     it('responds 401 \'Unauthorized request\' when no credentials in token', () => {
       const userNoCreds = { user_name: '', password: '' };
+      const validUser = testUsers[0];
+      const invalidSecret = 'bad-secret';
       return supertest(app)
         .get('/api/articles/123')
-        .set('Authorization', helpers.makeAuthHeader(userNoCreds))
+        .set('Authorization', helpers.makeAuthHeader(validUser, invalidSecret))
         .expect(401, { error: 'Unauthorized request' });
     });
 
     it('responds 401 \'Unauthorized request\' when invalid user', () => {
-      const userInvalidCreds = { user_name: 'user-not', password: 'existy' };
+      const userInvalidCreds = { user_name: 'user-not', id: 1 };
       return supertest(app)
         .get('/api/articles/1')
         .set('Authorization', helpers.makeAuthHeader(userInvalidCreds))
